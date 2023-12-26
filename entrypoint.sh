@@ -114,8 +114,9 @@ echo "command=${command}" >> $GITHUB_OUTPUT
 echo "exitcode=${exitcode}" >> $GITHUB_OUTPUT
 echo -e "Gitleaks Summary: ${GITLEAKS_RESULT}\n" >> $GITHUB_STEP_SUMMARY
 # echo -e "${OUTPUT}" >>"$GITHUB_STEP_SUMMARY"
-
-if [ ${exitcode} -eq 1 ]; then
+if [ ${exitcode} -eq 0 ]; then
+  echo "::notice::${GITLEAKS_RESULT}"
+elif [ ${exitcode} -eq 1 ]; then
   if [ "${INPUT_FAIL}" = "true" ]; then
     echo "::error::${GITLEAKS_RESULT}"
   else
