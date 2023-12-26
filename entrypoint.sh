@@ -60,7 +60,7 @@ echo "git config --global --add safe.directory ${GITHUB_WORKSPACE}"
 git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 echo "----------------------------------"
 
-command="gitleaks detect --no-git --verbose"
+command="gitleaks detect --no-git --verbose --no-color"
 if [ -f "${INPUT_CONFIG}" ]; then
   command+=$(arg '--config %s' "${INPUT_CONFIG}")
 fi
