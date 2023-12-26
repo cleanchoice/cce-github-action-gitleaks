@@ -87,9 +87,8 @@ fi
 
 echo "----------------------------------"
 echo -e "${OUTPUT}"
-
 EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
-echo 'output<<EOF' >> $GITHUB_OUTPUT
+echo "output<<$EOF" >> $GITHUB_OUTPUT
 echo -e "${OUTPUT}" >> $GITHUB_OUTPUT
 echo "$EOF" >> $GITHUB_OUTPUT
 
