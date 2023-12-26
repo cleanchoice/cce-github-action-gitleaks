@@ -65,23 +65,26 @@ if [ -f "${INPUT_CONFIG}" ]; then
   command+=$(arg '--config %s' "${INPUT_CONFIG}")
 fi
 
-command+=$(arg '--baseline-path %s' "${INPUT_BASELINE_PATH}")
+# command+=$(arg '--baseline-path %s' "${INPUT_BASELINE_PATH}")
 command+=$(arg '--report-format %s' "${INPUT_REPORT_FORMAT}")
-command+=$(arg '--redact' "${INPUT_REDACT}")
+# command+=$(arg '--redact' "${INPUT_REDACT}")
 command+=$(arg '--verbose' "${INPUT_VERBOSE}")
 command+=$(arg '--log-level %s' "${INPUT_LOG_LEVEL}")
 command+=$(arg '--report-path %s' "${GITHUB_WORKSPACE}/gitleaks-report.${INPUT_REPORT_FORMAT}")
 
-if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
-  command+=$(arg '--source %s' "${GITHUB_WORKSPACE}")
+command+=$(arg '--source %s' "${INPUT_SOURCE}")
+command+=$(arg '--no-git' "${INPUT_NO_GIT}")
 
-  base_sha=$(git rev-parse "refs/remotes/origin/${GITHUB_BASE_REF}")
-  head_sha=$(git rev-list --no-merges -n 1 refs/remotes/pull/${GITHUB_REF_NAME})
-  command+=$(arg '--log-opts "%s"' "--no-merges --first-parent ${base_sha}...${head_sha}")
-else
-  command+=$(arg '--source %s' "${INPUT_SOURCE}")
-  command+=$(arg '--no-git' "${INPUT_NO_GIT}")
-fi
+# if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+#   command+=$(arg '--source %s' "${GITHUB_WORKSPACE}")
+# 
+#   base_sha=$(git rev-parse "refs/remotes/origin/${GITHUB_BASE_REF}")
+#   head_sha=$(git rev-list --no-merges -n 1 refs/remotes/pull/${GITHUB_REF_NAME})
+#   command+=$(arg '--log-opts "%s"' "--no-merges --first-parent ${base_sha}...${head_sha}")
+# else
+#   command+=$(arg '--source %s' "${INPUT_SOURCE}")
+#   command+=$(arg '--no-git' "${INPUT_NO_GIT}")
+# fi
 
 echo "Running gitleaks $(gitleaks version)"
 echo "----------------------------------"
