@@ -88,11 +88,10 @@ echo "----------------------------------"
 echo "${command}"
 # OUTPUT=$(eval "${command}")
 echo 'output<<EOF' >> $GITHUB_OUTPUT
-eval "$command" >> $GITHUB_OUTPUT
+echo "$(eval $command)" >> $GITHUB_OUTPUT
 echo 'EOF' >> $GITHUB_OUTPUT
-echo $GITHUB_OUTPUT
 exitcode=$?
-echo $exitcode
+echo "Exitcode $exitcode"
 
 if [ ${exitcode} -eq 0 ]; then
   GITLEAKS_RESULT="✅ SUCCESS! No leaks found"
@@ -115,7 +114,6 @@ echo "command=${command}" >> $GITHUB_OUTPUT
 echo "exitcode=${exitcode}" >> $GITHUB_OUTPUT
 echo -e "Gitleaks Summary: ${GITLEAKS_RESULT}\n" >> $GITHUB_STEP_SUMMARY
 # echo -e "${OUTPUT}" >>"$GITHUB_STEP_SUMMARY"
-
 
 if [ ${exitcode} -eq 1 ]; then
   if [ "${INPUT_FAIL}" = "true" ]; then
