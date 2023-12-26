@@ -70,7 +70,7 @@ command+=$(arg '--log-level %s' "${INPUT_LOG_LEVEL}")
 command+=$(arg '--report-path %s' "${GITHUB_WORKSPACE}/gitleaks-report.${INPUT_REPORT_FORMAT}")
 command+=$(arg '--source %s' "${INPUT_SOURCE}")
 
-echo "Running gitleaks $(gitleaks version)"
+echo "Running GitLeaks $(gitleaks version)"
 echo "----------------------------------"
 echo "${command}"
 OUTPUT=$(eval "${command}")
@@ -82,7 +82,7 @@ if [ ${exitcode} -eq 0 ]; then
 elif [ ${exitcode} -eq 1 ]; then
   GITLEAKS_RESULT="❌ FAILED! GitLeaks found a leak"
 else
-  GITLEAKS_RESULT="Gitleaks unknown error"
+  GITLEAKS_RESULT="GitLeaks unknown error"
 fi
 
 echo "----------------------------------"
@@ -97,7 +97,7 @@ echo "result=${GITLEAKS_RESULT}" >> $GITHUB_OUTPUT
 echo "command=${command}" >> $GITHUB_OUTPUT
 echo "exitcode=${exitcode}" >> $GITHUB_OUTPUT
 
-echo -e "Gitleaks Summary: ${GITLEAKS_RESULT}\n" >> $GITHUB_STEP_SUMMARY
+echo -e "GitLeaks Summary: ${GITLEAKS_RESULT}\n" >> $GITHUB_STEP_SUMMARY
 echo -e "${OUTPUT}" >>"$GITHUB_STEP_SUMMARY"
 
 if [ ${exitcode} -eq 1 ]; then
