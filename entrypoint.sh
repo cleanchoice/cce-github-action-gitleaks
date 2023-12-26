@@ -60,7 +60,7 @@ echo "git config --global --add safe.directory ${GITHUB_WORKSPACE}"
 git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 echo "----------------------------------"
 
-command="gitleaks detect"
+command="gitleaks detect --no-git --verbose"
 if [ -f "${INPUT_CONFIG}" ]; then
   command+=$(arg '--config %s' "${INPUT_CONFIG}")
 fi
@@ -68,12 +68,9 @@ fi
 # command+=$(arg '--baseline-path %s' "${INPUT_BASELINE_PATH}")
 command+=$(arg '--report-format %s' "${INPUT_REPORT_FORMAT}")
 # command+=$(arg '--redact' "${INPUT_REDACT}")
-command+=$(arg '--verbose' "${INPUT_VERBOSE}")
 command+=$(arg '--log-level %s' "${INPUT_LOG_LEVEL}")
 command+=$(arg '--report-path %s' "${GITHUB_WORKSPACE}/gitleaks-report.${INPUT_REPORT_FORMAT}")
-
 command+=$(arg '--source %s' "${INPUT_SOURCE}")
-command+=$(arg '--no-git')
 
 # if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
 #   command+=$(arg '--source %s' "${GITHUB_WORKSPACE}")
@@ -91,9 +88,11 @@ echo "----------------------------------"
 echo "${command}"
 # OUTPUT=$(eval "${command}")
 echo 'output<<EOF' >> $GITHUB_OUTPUT
-eval $command >> $GITHUB_OUTPUT
+eval "$command" >> $GITHUB_OUTPUT
 echo 'EOF' >> $GITHUB_OUTPUT
+echo $GITHUB_OUTPUT
 exitcode=$?
+echo $exitcode
 
 if [ ${exitcode} -eq 0 ]; then
   GITLEAKS_RESULT="✅ SUCCESS! No leaks found"
