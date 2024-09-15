@@ -1,176 +1,113 @@
-# GitHub Action for Gitleaks
+# Gitleaks Action
 
-[![GitHub - marketplace](https://img.shields.io/badge/marketplace-gitleaks--scanner-blue?logo=github&style=flat-square)](https://github.com/marketplace/actions/gitleaks-scanner)
-[![GitHub - release](https://img.shields.io/github/v/release/DariuszPorowski/github-action-gitleaks?style=flat-square)](https://github.com/DariuszPorowski/github-action-gitleaks/releases/latest)
-[![GitHub - license](https://img.shields.io/github/license/DariuszPorowski/github-action-gitleaks?style=flat-square)](https://github.com/DariuszPorowski/github-action-gitleaks/blob/main/LICENSE)
+```
 
-This GitHub Action allows you to run [Gitleaks](https://github.com/gitleaks/gitleaks) in your CI/CD workflow.
+  ┌─○───┐
+  │ │╲  │
+  │ │ ○ │
+  │ ○ ┌─┴───────────────────┐
+  └─░─┤  4 github actions   │
+      └─────────────────────┘
 
-> ⚠️ `v2` of this GitHub Action supports only the latest version of Gitleaks from v8 release.
+```
 
-## Inputs
+<p align="left">
+    <a href="https://github.com/zricethezav/gitleaks-action">
+        <img alt="gitleaks badge" src="https://img.shields.io/badge/protected%20by-gitleaks-blue">
+    </a>
+</p>
 
-| Name          | Required |  Type  | Default value                   | Description                                                                      |
-|---------------|:--------:|:------:|---------------------------------|----------------------------------------------------------------------------------|
-| source        |  false   | string | $GITHUB_WORKSPACE               | Path to source (relative to $GITHUB_WORKSPACE)                                   |
-| config        |  false   | string | /.gitleaks/UDMSecretChecks.toml | Config file path (relative to $GITHUB_WORKSPACE)                                 |
-| baseline_path |  false   | string | *not set*                       | Path to baseline with issues that can be ignored (relative to $GITHUB_WORKSPACE) |
-| report_format |  false   | string | json                            | Report file format: json, csv, sarif                                             |
-| no_git        |  false   |  bool  | *not set*                       | Treat git repos as plain directories and scan those file                         |
-| redact        |  false   |  bool  | true                            | Redact secrets from log messages and leaks                                       |
-| fail          |  false   |  bool  | true                            | Fail if secrets founded                                                          |
-| verbose       |  false   |  bool  | true                            | Show verbose output from scan                                                    |
-| log_level     |  false   | string | info                            | Log level (trace, debug, info, warn, error, fatal)                               |
+Gitleaks is a SAST tool for detecting and preventing hardcoded secrets like passwords, API keys, and tokens in git repos. Gitleaks is an easy-to-use, all-in-one solution for detecting secrets, past or present, in your code. Enable **Gitleaks-Action** in your GitHub workflows to be alerted when secrets are leaked as soon as they happen. Check out our demos [here (.gif)](https://user-images.githubusercontent.com/15034943/178513034-de5a1906-b71d-454a-a792-47b7ac0e21e6.gif) and [here (.png)](https://user-images.githubusercontent.com/15034943/193462170-7314a63b-1c37-4c9e-ac93-33d6d3fc561a.png), or see what's new in v2 [here](v2.md). Don't forget to check out our [blog](https://blog.gitleaks.io), which details how to configure and set up Gitleaks-Action for organizations and enterprises.
 
-> ⚠️ The solution provides predefined configuration (See: [.gitleaks](https://github.com/DariuszPorowski/github-action-gitleaks/tree/main/.gitleaks) path). You can override it by yours config using relative to `$GITHUB_WORKSPACE`.
+## Usage Example
 
-## Outputs
-
-| Name     | Description                                            |
-|----------|--------------------------------------------------------|
-| exitcode | Success (code: 0) or failure (code: 1) value from scan |
-| result   | Gitleaks result summary                                |
-| output   | Gitleaks log output                                    |
-| command  | Gitleaks executed command                              |
-| report   | Report file path                                       |
-
-## Example usage
-
-> ⚠️ You must use `actions/checkout` before the `github-action-gitleaks` step. If you are using `actions/checkout@v3` you must specify a commit depth other than the default which is 1.
->
-> Using a `fetch-depth` of '0' clones the entire history. If you want to do a more efficient clone, use '2', but that is not guaranteed to work with pull requests.
-
-### Pull Request with comment
-
-```yaml
----
-name: Secret Scan
-
+```yml
+name: gitleaks
 on:
   pull_request:
   push:
-    branches:
-      - main
-
-# allow one concurrency
-concurrency:
-  group: ${{ format('{0}-{1}-{2}-{3}-{4}', github.workflow, github.event_name, github.ref, github.base_ref, github.head_ref) }}
-  cancel-in-progress: true
-
+  workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * *" # run once a day at 4 AM
 jobs:
-  gitleaks:
+  scan:
+    name: gitleaks
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Run Gitleaks
-        id: gitleaks
-        uses: DariuszPorowski/github-action-gitleaks@v2
-        with:
-          fail: false
-
-      - name: Post PR comment
-        uses: actions/github-script@v6
-        if: ${{ steps.gitleaks.outputs.exitcode == 1 && github.event_name == 'pull_request' }}
-        with:
-          github-token: ${{ github.token }}
-          script: |
-            const { GITLEAKS_RESULT, GITLEAKS_OUTPUT } = process.env
-            const output = `### ${GITLEAKS_RESULT}
-
-            <details><summary>Log output</summary>
-
-            ${GITLEAKS_OUTPUT}
-
-            </details>
-            `
-            github.rest.issues.createComment({
-              ...context.repo,
-              issue_number: context.issue.number,
-              body: output
-            })
+      - uses: gitleaks/gitleaks-action@v2
         env:
-          GITLEAKS_RESULT: ${{ steps.gitleaks.outputs.result }}
-          GITLEAKS_OUTPUT: ${{ steps.gitleaks.outputs.output }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE}} # Only required for Organizations, not personal accounts.
 ```
 
-### With SARIF report
 
-```yaml
-- name: Checkout
-  uses: actions/checkout@v3
-  with:
-    fetch-depth: 0
+---
+### Environment Variables:
 
-- name: Run Gitleaks
-  id: gitleaks
-  uses: DariuszPorowski/github-action-gitleaks@v2
-  with:
-    report_format: sarif
-    fail: false
+- `GITHUB_TOKEN`: This variable is automatically assigned by GitHub when any action gets kicked off. You can read more about the token [here](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#about-the-github_token-secret).
+  **gitleaks-action** uses this token to call [a GitHub API](https://octokit.github.io/rest.js/v18#pulls-create-review-comment) to comment on PRs.
+- `GITLEAKS_LICENSE` (required for organizations, not required for user accounts): A **gitleaks-action** license can be obtained at [gitleaks.io](https://gitleaks.io/products.html). **It should be added as an encrypted secret [to the repo](https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-a-repository) or [to the organization](https://docs.github.com/en/actions/security-guides/encrypted-secrets#creating-encrypted-secrets-for-an-organization).**
+- `GITLEAKS_NOTIFY_USER_LIST` (optional): A list of GitHub accounts that should be alerted when **gitleaks-action** detects a leak. An email will be sent by GitHub to the user if their GitHub notification settings permit it. The format should be comma-separated with each username prefixed with `@`. Ex: `@octocat,@zricethezav,@gitleaks`. Spaces are okay too.
+- `GITLEAKS_ENABLE_COMMENTS` (optional): Boolean value that turns on or off PR commenting. Default value is `true`.
+  Set to `false` to disable comments.
+- `GITLEAKS_CONFIG` (optional): Path to a [gitleaks configuration file](https://github.com/zricethezav/gitleaks#configuration).
+- `GITLEAKS_ENABLE_UPLOAD_ARTIFACT` (optional): Boolean value that turns on or off uploading a sarif artifact when gitleaks detects secrets. Defaults to `true`.
+- `GITLEAKS_ENABLE_SUMMARY` (optional): Boolean value to enable or disable gitleaks job summary. Defaults to `true`.
+- `GITLEAKS_VERSION` (optional): A particular Gitleaks version to use (e.g. `8.15.3`, no `v` prefix) or use `latest` to always use the newest available version. Defaults to a hard-coded version number.
+---
 
-# (optional) It's just to see outputs from the Action
-# please note, the OUTPUT has to be passed via env vars!
-- name: Get the output from the gitleaks step
-  run: |
-    echo "exitcode: ${{ steps.gitleaks.outputs.exitcode }}"
-    echo "result: ${{ steps.gitleaks.outputs.result }}"
-    echo "command: ${{ steps.gitleaks.outputs.command }}"
-    echo "report: ${{ steps.gitleaks.outputs.report }}"
-    echo "output: ${GITLEAKS_OUTPUT}"
-  env:
-    GITLEAKS_OUTPUT: ${{ steps.gitleaks.outputs.output }}
+## Questions
 
-- name: Upload Gitleaks SARIF report to code scanning service
-  if: ${{ steps.gitleaks.outputs.exitcode == 1 }}
-  uses: github/codeql-action/upload-sarif@v2
-  with:
-    sarif_file: ${{ steps.gitleaks.outputs.report }}
-```
+### Do I need a _free_ license key?
+If you are scanning repos that belong to [an organization account](https://docs.github.com/en/organizations/collaborating-with-groups-in-organizations/about-organizations), you will need to obtain a [free license key](https://gitleaks.io/products.html)
 
-> ⚠️ SARIF file uploads for code scanning is not available for everyone. Read GitHub docs ([Uploading a SARIF file to GitHub](https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github)) for more information.
+If you are scanning repos that belong to [a personal account](https://docs.github.com/en/get-started/learning-about-github/types-of-github-accounts#personal-accounts), then no license key is required.
 
-### With JSON report and custom rules config
+### How do I get a _free_ license key?
 
-```yaml
-- name: Checkout
-  uses: actions/checkout@v3
-  with:
-    fetch-depth: 0
+You can visit [gitleaks.io](https://gitleaks.io/products.html) to sign up for a
+free license key. Clicking "Sign Up" will take you to a google form where you will need to supply name, email, and company. An email with a license key will show up shortly after submission.
 
-- name: Run Gitleaks
-  id: gitleaks
-  uses: DariuszPorowski/github-action-gitleaks@v2
-  with:
-    config: MyGitleaksConfigs/MyGitleaksConfig.toml
+### Can I use a custom gitleaks configuration?
 
-- name: Upload Gitleaks JSON report to artifacts
-  uses: actions/upload-artifact@v3
-  if: failure()
-  with:
-    name: gitleaks
-    path: ${{ steps.gitleaks.outputs.report }}
-```
+You can! This GitHub Action follows a similar order of precedence
+as the gitleaks CLI tool. You can use `GITLEAKS_CONFIG` to explicitly set a
+config path _or_ create a `gitleaks.toml` at the root of the repo which will be
+automatically detected and used by **gitleaks-action**.
 
-## Additional rules
+### Does this GitHub Action send any data to 3rd parties?
 
-[Jesse Houwing](https://github.com/jessehouwing) provided a Gitleaks config with most of Microsoft's deprecated CredScan rules. Consider using it if you need to scan projects based on Microsoft technologies or Azure Cloud.
+The only data that **gitleaks-action** sends to any third party is data related to license key validation (namely `GITLEAKS_LICENSE`, [repo name](https://github.com/zricethezav/gitleaks-action/blob/v2/src/keygen.js#L76), and [repo owner](https://github.com/zricethezav/gitleaks-action/blob/v2/src/keygen.js#L18)), which is sent to the license key validation service, [keygen](https://keygen.sh). Your code never leaves GitHub because the scanning takes place within the GitHub Actions docker container.
 
-- [UDMSecretChecks.toml](https://github.com/jessehouwing/gitleaks-azure/blob/main/UDMSecretChecksv8.toml)
+### Can I use **gitleaks-action** as a third-party tool for [GitHub code scanning](https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/setting-up-code-scanning-for-a-repository)?
 
-## Contributions
+You _can_ but it is not recommended because it gives a false sense of security. If a secret is leaked in one commit, then removed in a subsequent commit,
+the security alert in the GitHub Security dashboard will show as resolved, even though the secret is still visible in the commit history. To truly address the leak,
+you should rotate the secret (and also consider re-writing the git history to remove the leak altogether).
 
-If you have any feedback on `Gitleaks`, please reach out to [Zachary Rice (@zricethezav)](https://github.com/zricethezav) for creating and maintaining [Gitleaks](https://github.com/gitleaks/gitleaks).
+### Why is my gitleaks-action job suddenly failing?
+_6/21/2022_
 
-Any feedback on the Gitleaks config for Azure `UDMSecretChecks.toml` file is welcome. Follow Jesse Houwing's GitHub repo - [gitleaks-azure](https://github.com/jessehouwing/gitleaks-azure).
+On June 21, 2022, we merged [Gitleaks Action v2](https://github.com/gitleaks/gitleaks-action/releases/tag/v2.0.0) into the `master` branch. This was a breaking update, and we made an effort to contact as many of our users as possible via GitHub, social media, etc. If you didn't know this breaking update was coming, we sincerely apologize for the inconvenience. The good news is, remedying the job failure is straightforward! You can either:
+1. [Upgrade to v2](v2.md#how-to-upgrade-to-v2), or
+1. [Pin to an older version](v2.md#how-to-pin-to-v160)
 
-Thanks to [C.J. May (@lawndoc)](https://github.com/lawndoc) for contributing 🤘
+Please note that if you are scanning repos that belong to an organization, you'll have to [acquire a GITLEAKS_LICENSE](https://github.com/gitleaks/gitleaks-action#environment-variables) to use v2 (free "Trial" license available). That might come as a surprise to my users that are accustomed to using Gitleaks-Action free of charge, so I wrote a blog post explaining how/why I decided to monetize this project: https://blog.gitleaks.io/gitleaks-llc-announcement-d7d06a52e801
 
-Any feedback or contribution to this project is welcome!
+Finally, please see above for a summary of why I think you'll love the new v2 release: [v2 Benefits](v2.md#v2-benefits)
 
-## How do I remove a secret from Git's history?
+### How can I get a gitleaks badge on my readme?
 
-[GitHub](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository) has a great article on this using the [BFG Repo Cleaner](https://rtyley.github.io/bfg-repo-cleaner/).
+Enable this **gitleaks-action** and copy
+`<img alt="gitleaks badge" src="https://img.shields.io/badge/protected%20by-gitleaks-blue">` to your readme.
+
+## License Change
+Since v2.0.0 of Gitleaks-Action, the license has changed from MIT to a [commercial license](https://github.com/zricethezav/gitleaks-action/blob/v2/COMMERCIAL-LICENSE.txt). Prior versions to v2.0.0 of Gitleaks-Actions will remain under the MIT license.
+
+## Contributing
+Please see our [contributing guidelines](CONTRIBUTING.md).
+
+_Copyright © 2022 Gitleaks LLC - All Rights Reserved_
